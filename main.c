@@ -210,14 +210,15 @@ int main(int argc, char *argv[])
 
 	// Barriers and Mutex settings
 
-	pthread_barrier_init(&fullBufferBarrier, NULL, threads);
+	pthread_barrier_init(&fullBufferBarrier, NULL, threads+1);
 	pthread_barrier_init(&emptyBufferBarrier, NULL, 2);
-	pthread_barrier_init(&syncStartBarrier, NULL, threads);
+	pthread_barrier_init(&syncStartBarrier, NULL, threads+1);
 
 
 	for(int image = 0; image < imgNumber; image++)
 	{
 		bufferFill = -1;
+		ticket = 0;
 
 		// Producer thread creation
 		pthread_create(&proThread, NULL, producer, &buffer, &bufferSize);
