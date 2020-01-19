@@ -4,18 +4,113 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/wait.h>
+#include <pthread.h>
 #include "utils.h"
 
-#define READ 0
-#define WRITE 1
+
+/*/ Things to do:
+- Adaptar la funcion consumer para recibir el pipeline.
+- Agregar la obtencion de parametros a la funcion producer.
+- Crear Buffer.
+- Corregir posibles errores de compilacion (manejo de punteros)
+/*/
+
+
+// Args structs
+
+struct arg_struct {
+    int buffer;
+    int auxiliary;
+};
+
+
+// Global variables
+int ticket;
+int bufferFill;
+int currentImageRows;
+
+pthread_mutex_t ticketSelectionMutex;
+
+pthread_barrier_t fullBufferBarrier;
+pthread_barrier_t emptyBufferBarrier;
+pthread_barrier_t syncStartBarrier;
+
+void* producer(void* buffer, void* bfrSize)
+{
+	int i;
+	int n = 0;
+	int* bfrSizePtr = (int*) bfrSize;
+	// Get params here
+	// currentImageRows = getRows();
+
+	bufferFill = 0;
+
+	pthread_barrier_wait(&syncStartBarrier);
+
+	while(1)
+	{
+		for (i = 0; i < *bfrSizePtr; i++)
+		{
+			//*buffer[i] = rowLectureFunction();
+			bufferFill++;
+			n++;
+
+			if (n == currentImageRows)	// Last row of the image
+			{
+				pthread_barrier_wait(&fullBufferBarrier);
+				pthread_exit(NULL);
+			}
+		}
+
+		// This section is executed only if the buffer has been filled and the image still has not been fully read.
+
+		pthread_barrier_wait(&fullBufferBarrier);  // Release barrier.
+		pthread_barrier_wait(&emptyBufferBarrier);  // Locked until consumers empty buffer.
+	}
+}
+
+void* consumer(void* buffer, void* workload)
+{
+	int i;
+
+
+	int* workload_ptr = (int*) workload;
+
+	pthread_barrier_wait(&syncStartBarrier);
+
+	for(int work = 0; work < *workload_ptr; work++)
+	{
+
+
+		pthread_barrier_wait(&fullBufferBarrier); // Locked until producer finishes.
+
+		pthread_mutex_lock(&ticketSelectionMutex);
+
+		if (bufferFill == 0)
+		{
+			pthread_barrier_wait(&emptyBufferBarrier); // Release barrier
+
+			while(bufferFill == 0);
+		}
+
+		i = ticket;
+		ticket++;
+
+		bufferFill--;
+
+
+		pthread_mutex_unlock(&ticketSelectionMutex);
+
+
+		// consume(buffer[ticket % (*bfrSizePtr)]);
+	}
+
+}
 
 int main(int argc, char *argv[])
 {
 	int opt;
 	int flags = 0;
-
-	int piped[2];
-	pid_t pid;
 
 	int imgNumber; // Number of images received.
 	double kernel[3][3];
@@ -105,7 +200,47 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	int threshold = clssThreshold;
 
-	return 0;
-}
+	pthread_t proThread;
+	pthread_t conThreads[threads];
+
+	// Create buffer here
+
+
+
+	// Barriers and Mutex settings
+
+	pthread_barrier_init(&fullBufferBarrier, NULL, threads);
+	pthread_barrier_init(&emptyBufferBarrier, NULL, 2);
+	pthread_barrier_init(&syncStartBarrier, NULL, threads);
+
+
+	for(int image = 0; image < imgNumber; image++)
+	{
+		bufferFill = -1;
+
+		// Producer thread creation
+		pthread_create(&proThread, NULL, producer, &buffer, &bufferSize);
+
+		while(bufferFill == -1);	// Stop until parameters are retrieved.
+
+
+		// Consumer threads creation
+		for(int j = 0; j < (threads-1); j++)
+		{
+			pthread_create(&conThreads[j], NULL, consumer, &buffer, (currentImageRows/threads));
+		}
+
+		if ((currentImageRows%threads) == 0)
+		{
+			pthread_create(&conThreads[threads-1], NULL, consumer, &buffer, (currentImageRows/threads));
+		}
+
+		else
+		{
+			pthread_create(&conThreads[threads-1], NULL, consumer, &buffer, (currentImageRows/threads)+1);
+		}
+
+	}
+	return 0;		
+}	
