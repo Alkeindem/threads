@@ -51,7 +51,7 @@ void* producer(void* prodArgs)
 
 	sprintf(str, "%d", myProdArgs->imageNumber);
 
-	globalImgFile = startLecture(strcat("imagen_", str));
+	startLecture(globalImgFile, strcat("imagen_", str));
 	currentImageRows = globalImgFile->height;
 
 	bufferFill = 0;
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
 
 	// Argument structs here
 
-	arg_struct_prod prodArgs = malloc(sizeof(arg_struct_prod));
+	arg_struct_prod *prodArgs = malloc(sizeof(arg_struct_prod));
 	prodArgs->bufferSize = bufferSize;
 
 

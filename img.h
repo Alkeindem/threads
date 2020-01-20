@@ -40,8 +40,8 @@ void getData(unsigned char* buffer, Img *imgFile, int lenght);
 
 char* readChunk(int fd, Img *imgFile);
 
-Img readPNG(int fd);
+void readPNG(Img *imgFile, int fd);
 
-Img startLecture(char* fileName);
+void startLecture(Img *imgFile, char *filename);
 
 #endif

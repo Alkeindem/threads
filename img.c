@@ -618,6 +618,7 @@ char* readChunk(int fd, Img *imgFile)
 //Input: File descriptor to read from
 //Function: Start reading PNG data and stops at the last chunk (IEND)
 //Output: Img structre with info stored
+/* 
 Img readPNG(int fd)
 {
     unsigned char *chunkName = (unsigned char*) malloc(sizeof(char) * 4);
@@ -638,10 +639,30 @@ Img readPNG(int fd)
     free(chunkName);
     return imgFile;
 }
+ */
 
+void readPNG(Img *imgFile, int fd)
+{
+    unsigned char *chunkName = (unsigned char*) malloc(sizeof(char) * 4);
+    unsigned int width, height;
+    
+    imgFile->dataSize = 0;
+    imgFile->idatChunks = 0;
+    
+    while(strcmp(chunkName, "IEND") != 0)
+    {
+        chunkName = readChunk(fd, imgFile);
+        if(strcmp(chunkName, "IEND") == 0)
+        {
+            break;
+        }
+    }
+    free(chunkName);
+}
 //Input: Name of the image file to read
 //Function: Starts reading the png file information
 //Output: Img struct with all data stored
+/* 
 Img startLecture(char *filename)
 {
     int fd, i = 0;
@@ -662,5 +683,25 @@ Img startLecture(char *filename)
     close(fd);
     
     return imageFile;
+}
+ */
+
+void startLecture(Img *imgFile, char *filename)
+{
+    int fd, i = 0;
+    char buffer[256];
+    int size;
+
+    fd = open(filename, O_RDONLY);
+
+    //First 8 bytes of header are the PNG signature
+    for(i; i < 8; i++)
+    {
+        size = read(fd, buffer, 1);
+        buffer[0] = 0;
+    }
+
+    readPNG(imgFile, fd);
+    close(fd);
 }
 
