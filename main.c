@@ -45,13 +45,21 @@ void* producer(void* prodArgs)
 	arg_struct_prod* myProdArgs = (arg_struct_prod*) prodArgs;
 
 	int i;
-	char str[3];
+	char* str;
+	char* imageName;
 	int n = 0;
 	int bfrSize =  myProdArgs->bufferSize;
 
+	str = malloc(6 * sizeof(char));
+	imageName = malloc(12 * sizeof(char));
+
 	sprintf(str, "%d", myProdArgs->imageNumber);
 
-	startLecture(globalImgFile, strcat("imagen_", str));
+	strcpy(imageName, "imagen_");
+	strcat(imageName, str);
+
+
+	startLecture(globalImgFile, imageName);
 	currentImageRows = globalImgFile->height;
 
 	bufferFill = 0;
@@ -240,7 +248,6 @@ int main(int argc, char *argv[])
 	pthread_barrier_init(&emptyBufferBarrier, NULL, 2);
 	pthread_barrier_init(&syncStartBarrier, NULL, threads+1);
 
-
 	for(int image = 1; image <= imgNumber; image++)
 	{
 		bufferFill = -1;
@@ -252,7 +259,7 @@ int main(int argc, char *argv[])
 
 
 		// Producer thread creation
-		pthread_create(&proThread, NULL, producer, (void*) &prodArgs);
+		pthread_create(&proThread, NULL, producer, (void*) prodArgs);
 
 		while(bufferFill == -1);	// Stop until parameters are retrieved.
 
@@ -264,11 +271,16 @@ int main(int argc, char *argv[])
 
 		for(int j = 0; j < (threads-1); j++)
 		{
+
 			pthread_create(&conThreads[j], NULL, consumer, (void*) (&baseWorkload));
 		}
 
 		pthread_create(&conThreads[threads-1], NULL, consumer, (void*) (&specialWorkload));
 
 	}
+
+	printf("%d\n", globalImgFile->height);
+
+	printf("Exit successfully\n");
 	return 0;		
 }	
