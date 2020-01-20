@@ -67,26 +67,34 @@ void* producer(void* prodArgs)
 	bufferFill = 0;
 
 	pthread_barrier_wait(&syncStartBarrier);
-
 	while(1)
 	{
 		for (i = 0; i < bfrSize; i++)
 		{
 			buffer[i] = n;
 			bufferFill++;
+			printf("Added: %d, bufferFill = %d\n", n, bufferFill);
 			n++;
 
 			if (n == currentImageRows)	// Last row of the image
 			{
+				printf("Producer Finished\n");
 				pthread_barrier_wait(&fullBufferBarrier);
 				pthread_exit(NULL);
 			}
 		}
 
+		printf("Buffer filled!\n\n");
 		// This section is executed only if the buffer has been filled and the image still has not been fully read.
 
-		pthread_barrier_wait(&fullBufferBarrier);  // Release barrier.
+
+		if (n == bfrSize)
+		{
+			pthread_barrier_wait(&fullBufferBarrier);  // Release barrier.
+		}
+		
 		pthread_barrier_wait(&emptyBufferBarrier);  // Locked until consumers empty buffer.
+		printf("Restock!\n");
 	}
 }
 
@@ -99,19 +107,20 @@ void* consumer(void* workload)
 
 	pthread_barrier_wait(&syncStartBarrier);
 
+	pthread_barrier_wait(&fullBufferBarrier); // Locked until producer finishes.
+
 	for(int work = 0; work < *workload_ptr; work++)
 	{
 
-
-		pthread_barrier_wait(&fullBufferBarrier); // Locked until producer finishes.
 
 		pthread_mutex_lock(&ticketSelectionMutex);
 
 		if (bufferFill == 0)
 		{
+			printf("Buffer emptied!\n\n");
 			pthread_barrier_wait(&emptyBufferBarrier); // Release barrier
 
-			while(bufferFill == 0);
+			while(bufferFill < 4);
 		}
 
 		i = ticket;
@@ -119,12 +128,14 @@ void* consumer(void* workload)
 
 		bufferFill--;
 
-
 		pthread_mutex_unlock(&ticketSelectionMutex);
 
-
+		printf("Consumed %d, bufferFill = %d\n", i, bufferFill);
 		// consume(buffer[ticket % (*bfrSizePtr)]);
+		//pConvolution(kernel, &globalImgFile, ticket % (*bfrSizePtr))
 	}
+
+	printf("Finished my workload!\n");
 
 	while(ticket != currentImageRows)
 	{
@@ -279,10 +290,14 @@ int main(int argc, char *argv[])
 
 		pthread_create(&conThreads[threads-1], NULL, consumer, (void*) (&specialWorkload));
 
+		pthread_join(proThread, NULL);
+
 	}
 
 	printf("%d\n", globalImgFile->height);
 
 	printf("Exit successfully\n");
+
+	sleep(1);
 	return 0;		
 }	
