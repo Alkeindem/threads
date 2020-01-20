@@ -31,4 +31,12 @@ int nearlyBlack(float** imgMatrix, Img *imgFile, float percentage);
 void printMat(float** imgMatr, Img *imgFile);
 
 void setAllImgSizes(Img *imgFile);
+
+void copyRow(Img *imgFile, float* row1, float *row2);
+
+void auxPooling(Img *imgFile, int row);
+
+void auxConvolution(Img *imgFile, int row);
+
+void auxRectification(Img *imgFile, float *row1, int row);
 #endif

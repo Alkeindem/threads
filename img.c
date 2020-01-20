@@ -165,7 +165,7 @@ void pConvolution(double kernel[3][3], Img *imgFile, int row)
                                 + imgFile->image1[row+1][j-1] * kernel[2][0] + imgFile->image1[row+1][j] * kernel[2][1] + imgFile->image1[row+1][j+1] * kernel[2][2]
                                 ) / 9;
         }
-    }    
+    }
 }
 
 //Input: The bidimensional array for the image, Img struct pointer
@@ -262,6 +262,7 @@ void pooling(float **imgMatrix, Img *imgFile)
 
 //Input: Pointer the the Img struct to get
 //Fu
+/* 
 void pPooling(Img *imgFile, int row)
 {
     //The mask dimension is 3x3
@@ -287,6 +288,102 @@ void pPooling(Img *imgFile, int row)
                 }
             }
             imgFile->image3[row / 3][i / 3] = maskMax;
+        }
+    }
+}
+ */
+void pPooling(Img *imgFile, int row)
+{
+    //The mask dimension is 3x3
+    //imgFile->image2 should already have the actual row with convolution and rectification
+    int i, j, k;
+    float *auxRow1 = (float*) malloc(sizeof(float) * imgFile->width);//Row directly beneath
+    float *auxRow2 = (float*) malloc(sizeof(float) * imgFile->width);//Row 2 rows down the original one
+    float tempMax, maskMax;
+    
+    if(row + 2 < imgFile->height && row % 3 == 0)//If the entire mask still fits in the boundaries of the image
+    {
+        auxPooling(imgFile, auxRow1, row + 1);
+        auxPooling(imgFile, auxRow2, row + 2);//Calculate temporarily the next 2 rows
+        for(i = 0; i < imgFile->width - 2; i += 3)//For each point horizontally in the row where the mask fits entirely
+        {
+            maskMax = imgFile->image2[row][i] //Origin point of the mask is the max
+            for(k = 0; k < 3; k++)//Each column in mask
+            {
+                if(i + k < imgFile->width)//If pixel in mask is not out of boundaries
+                {                    
+                    tempMax = imgFile->image2[row][i + k];//Check if the actual row from pooling at column i + k is the max
+                    if(tempMax > maskMax)
+                    {
+                        maskMax = tempMax
+                    }
+                    tempMax = auxRow1[i + k];//Check if the row beneath from pooling at column i + k is the max
+                    if(tempMax > maskMax)
+                    {
+                        maskMax = tempMax
+                    }
+                    tempMax = auxRow2[i + k];//Check if the row beneath the previous one from pooling at column i + k is the max
+                    if(tempMax > maskMax)
+                    {
+                        maskMax = tempMax
+                    }
+                }
+            }
+            imgFile->image3[row / 3][i / 3] = maskMax;
+        }
+    }
+    free(auxRow1);
+    free(auxRow2);
+}
+
+//Function: Copies float elements from row1 to row2
+void copyRow(Img *imgFile, float *row1, float *row2)
+{
+    int i;
+    for(i = 0; i < imgFile->width; i++)
+    {
+        row2[i] = row1[i];
+    }
+}
+
+void auxPooling(Img *imgFile, float *row1, int row)
+{
+    int i;
+    auxConvolution(imgFile, globalKernel, row1, row);//Uses global kernel
+    auxRectification(imgFile, row1);
+}
+
+void auxConvolution(Img *imgFile, double kernel[3][3], float *row1, int row)
+{
+    int j;
+    for(j = 0; j < imgFile->width; j++)
+    {
+        if(row == 0 || j == 0)//Borders become 0
+        {
+            row1[j] = 0;
+        }
+        else if(row == imgFile->height - 1 || j == imgFile->width - 1)//Borders become 0
+        {
+            row1[j] = 0;
+        }
+        else
+        {
+            row1[j] = (imgFile->image1[row-1][j-1] * kernel[0][0] + imgFile->image1[row-1][j] * kernel[0][1] + imgFile->image1[row-1][j+1] * kernel[0][2]
+                                + imgFile->image1[row][j-1] * kernel[1][0] + imgFile->image1[row][j] * kernel[1][1] + imgFile->image1[row+1][j] * kernel[1][2]
+                                + imgFile->image1[row+1][j-1] * kernel[2][0] + imgFile->image1[row+1][j] * kernel[2][1] + imgFile->image1[row+1][j+1] * kernel[2][2]
+                                ) / 9;
+        }
+    }
+}
+
+void auxRectification(Img *imgFile, float *row1)
+{
+    int i;
+    for(i = 0; i < imgFile->width; i++)
+    {
+        if(row1[i] < 0)
+        {
+            row1[i] = 0;
         }
     }
 }

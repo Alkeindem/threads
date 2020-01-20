@@ -6,6 +6,8 @@
 #include <sys/wait.h>
 #include <pthread.h>
 #include "utils.h"
+#include "structs.h"
+#include "img.h"
 
 
 /*/ Things to do:
@@ -28,6 +30,7 @@ struct arg_struct {
 int ticket;
 int bufferFill;
 int currentImageRows;
+Img *globalImgFile;
 
 pthread_mutex_t ticketSelectionMutex;
 
@@ -46,6 +49,9 @@ void* producer(void* buffer, void* bfrSize)
 	int* bfrSizePtr = (int*) bfrSize;
 	// Get params here
 	// currentImageRows = getRows();
+
+	//globalImgFile = starLecture("NombreArchivoALeer");  HAY QUE PASARLE EL NOMBRE DE LA IMAGEN A LEER (o el numero de la imagen)
+	// currentImageRows = globalImgFile->height;
 
 	bufferFill = 0;
 
@@ -137,6 +143,7 @@ int main(int argc, char *argv[])
 	int bufferSize;		// Capacity of the buffer for reading section.
 
 	char str[128];
+	globalImgFile = (Img*) malloc(sizeof(Img));//Reserve memory for the global Img struct
 
 	while ((opt = getopt(argc, argv, "h:t:c:m:n:b")) != -1)
 	{
