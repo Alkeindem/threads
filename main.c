@@ -62,7 +62,7 @@ void* producer(void* prodArgs)
 	{
 		for (i = 0; i < bfrSize; i++)
 		{
-			*buffer[i] = n;
+			buffer[i] = n;
 			bufferFill++;
 			n++;
 
@@ -229,7 +229,6 @@ int main(int argc, char *argv[])
 
 	arg_struct_prod prodArgs = malloc(sizeof(arg_struct_prod));
 	prodArgs->bufferSize = bufferSize;
-	prodArgs->buffer = buffer;
 
 
 
@@ -253,7 +252,7 @@ int main(int argc, char *argv[])
 
 
 		// Producer thread creation
-		pthread_create(&proThread, NULL, producer, (void*) prodArgs);
+		pthread_create(&proThread, NULL, producer, (void*) &prodArgs);
 
 		while(bufferFill == -1);	// Stop until parameters are retrieved.
 
@@ -265,10 +264,10 @@ int main(int argc, char *argv[])
 
 		for(int j = 0; j < (threads-1); j++)
 		{
-			pthread_create(&conThreads[j], NULL, consumer, (void*) (baseWorkload));
+			pthread_create(&conThreads[j], NULL, consumer, (void*) (&baseWorkload));
 		}
 
-		pthread_create(&conThreads[threads-1], NULL, consumer, (void*) (specialWorkload));
+		pthread_create(&conThreads[threads-1], NULL, consumer, (void*) (&specialWorkload));
 
 	}
 	return 0;		
