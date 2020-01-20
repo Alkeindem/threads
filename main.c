@@ -57,6 +57,8 @@ void* producer(void* prodArgs)
 
 	strcpy(imageName, "imagen_");
 	strcat(imageName, str);
+	strcat(imageName, ".png");
+	printf("\nsada: %s\n", imageName);
 
 
 	startLecture(globalImgFile, imageName);
