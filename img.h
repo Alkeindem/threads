@@ -20,7 +20,7 @@ void copyRow(Img *imgFile, float* row1, float *row2);
 
 void auxPooling(Img *imgFile, double kernel[3][3], float *row1, int row);
 
-void auxConvolution(Img *imgFile, double kernel[3][3], float *row1, int row)
+void auxConvolution(Img *imgFile, double kernel[3][3], float *row1, int row);
 
 void auxRectification(Img *imgFile, float *row1);
 
@@ -34,7 +34,7 @@ void setImage(Img *imgFile);
 
 void setAllImgSizes(Img *imgFile);
 
-void getDimensions(char *buffer, Img *imgFile)
+void getDimensions(char *buffer, Img *imgFile);
 
 void getData(unsigned char* buffer, Img *imgFile, int lenght);
 
