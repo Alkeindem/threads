@@ -67,6 +67,8 @@ void* producer(void* prodArgs)
 
 	startLecture(globalImgFile, imageName);
 	currentImageRows = globalImgFile->height;
+	setAllImgSizes(globalImgFile);
+	setImage(globalImgFile); //Allocate memory for images being processed
 
 	bufferFill = 0;
 
@@ -130,7 +132,7 @@ void* consumer(void* consArgs)
 		pthread_mutex_unlock(&ticketSelectionMutex);
 
 		// consume(buffer[ticket % (*bfrSizePtr)]);
-		pConvolution(kernel, globalImgFile, ticket % (bfrSize));
+		pConvolution(kernel, globalImgFile, i % (bfrSize));
 	}
 
 }

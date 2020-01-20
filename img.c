@@ -704,4 +704,3 @@ void startLecture(Img *imgFile, char *filename)
     readPNG(imgFile, fd);
     close(fd);
 }
-
