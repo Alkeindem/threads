@@ -25,6 +25,11 @@ typedef struct arg_struct_prod {
     int imageNumber;
 } arg_struct_prod;
 
+typedef struct arg_struct_cons {
+    int bufferSize;
+    int workload;
+} arg_struct_cons;
+
 // Global variables
 int ticket;
 int bufferFill;
@@ -58,7 +63,6 @@ void* producer(void* prodArgs)
 	strcpy(imageName, "imagen_");
 	strcat(imageName, str);
 	strcat(imageName, ".png");
-	printf("\nsada: %s\n", imageName);
 
 
 	startLecture(globalImgFile, imageName);
@@ -73,18 +77,14 @@ void* producer(void* prodArgs)
 		{
 			buffer[i] = n;
 			bufferFill++;
-			printf("Added: %d, bufferFill = %d\n", n, bufferFill);
 			n++;
 
 			if (n == currentImageRows)	// Last row of the image
 			{
-				printf("Producer Finished\n");
-				pthread_barrier_wait(&fullBufferBarrier);
 				pthread_exit(NULL);
 			}
 		}
 
-		printf("Buffer filled!\n\n");
 		// This section is executed only if the buffer has been filled and the image still has not been fully read.
 
 
@@ -92,24 +92,24 @@ void* producer(void* prodArgs)
 		{
 			pthread_barrier_wait(&fullBufferBarrier);  // Release barrier.
 		}
-		
+
 		pthread_barrier_wait(&emptyBufferBarrier);  // Locked until consumers empty buffer.
-		printf("Restock!\n");
 	}
 }
 
-void* consumer(void* workload)
+void* consumer(void* consArgs)
 {
 	int i;
 
-
-	int* workload_ptr = (int*) workload;
+	arg_struct_cons* myConsArgs = (arg_struct_cons*) consArgs;
+	int bfrSize =  myConsArgs->bufferSize;
+	int workload = myConsArgs->workload;
 
 	pthread_barrier_wait(&syncStartBarrier);
 
 	pthread_barrier_wait(&fullBufferBarrier); // Locked until producer finishes.
 
-	for(int work = 0; work < *workload_ptr; work++)
+	for(int work = 0; work < workload; work++)
 	{
 
 
@@ -117,10 +117,9 @@ void* consumer(void* workload)
 
 		if (bufferFill == 0)
 		{
-			printf("Buffer emptied!\n\n");
 			pthread_barrier_wait(&emptyBufferBarrier); // Release barrier
 
-			while(bufferFill < 4);
+			while(bufferFill < bfrSize);
 		}
 
 		i = ticket;
@@ -130,16 +129,8 @@ void* consumer(void* workload)
 
 		pthread_mutex_unlock(&ticketSelectionMutex);
 
-		printf("Consumed %d, bufferFill = %d\n", i, bufferFill);
 		// consume(buffer[ticket % (*bfrSizePtr)]);
-		//pConvolution(kernel, &globalImgFile, ticket % (*bfrSizePtr))
-	}
-
-	printf("Finished my workload!\n");
-
-	while(ticket != currentImageRows)
-	{
-		pthread_barrier_wait(&fullBufferBarrier); // Locked until producer finishes.
+		pConvolution(kernel, globalImgFile, ticket % (bfrSize));
 	}
 
 }
@@ -252,6 +243,13 @@ int main(int argc, char *argv[])
 	prodArgs->bufferSize = bufferSize;
 
 
+	arg_struct_cons *consArgs = malloc(sizeof(arg_struct_cons));
+	consArgs->bufferSize = bufferSize;
+
+	arg_struct_cons *specConsArgs = malloc(sizeof(arg_struct_cons));
+	specConsArgs->bufferSize = bufferSize;
+
+
 
 
 
@@ -282,13 +280,16 @@ int main(int argc, char *argv[])
 		extraWorkload = currentImageRows%threads;
 		specialWorkload = baseWorkload + extraWorkload;
 
+		consArgs->workload = baseWorkload;
+		specConsArgs->workload = specialWorkload;
+
 		for(int j = 0; j < (threads-1); j++)
 		{
 
-			pthread_create(&conThreads[j], NULL, consumer, (void*) (&baseWorkload));
+			pthread_create(&conThreads[j], NULL, consumer, (void*) (consArgs));
 		}
 
-		pthread_create(&conThreads[threads-1], NULL, consumer, (void*) (&specialWorkload));
+		pthread_create(&conThreads[threads-1], NULL, consumer, (void*) (specConsArgs));
 
 		pthread_join(proThread, NULL);
 
@@ -298,6 +299,5 @@ int main(int argc, char *argv[])
 
 	printf("Exit successfully\n");
 
-	sleep(1);
 	return 0;		
 }	
