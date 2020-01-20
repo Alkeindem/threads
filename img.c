@@ -346,7 +346,7 @@ void copyRow(Img *imgFile, float *row1, float *row2)
     }
 }
 
-void auxPooling(Img *imgFile, double kernel[3][3], float *row1, int row)
+void auxPooling(Img *imgFile, float *row1, double kernel[3][3], int row)
 {
     int i;
     auxConvolution(imgFile, kernel, row1, row);//Uses global kernel
