@@ -35,6 +35,10 @@ pthread_barrier_t fullBufferBarrier;
 pthread_barrier_t emptyBufferBarrier;
 pthread_barrier_t syncStartBarrier;
 
+pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER; 
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
+
+
 void* producer(void* buffer, void* bfrSize)
 {
 	int i;
@@ -103,6 +107,19 @@ void* consumer(void* buffer, void* workload)
 
 
 		// consume(buffer[ticket % (*bfrSizePtr)]);
+	}
+
+	while(ticket < currentImageRows)
+	{
+		pthread_barrier_wait(&emptyBufferBarrier); // Release barrier
+	}
+
+
+	
+
+	while(ticket != currentImageRows)
+	{
+		pthread_barrier_wait(&fullBufferBarrier); // Locked until producer finishes.
 	}
 
 }
@@ -239,7 +256,7 @@ int main(int argc, char *argv[])
 
 		else
 		{
-			pthread_create(&conThreads[threads-1], NULL, consumer, &buffer, (currentImageRows/threads)+1);
+			pthread_create(&conThreads[threads-1], NULL, consumer, &buffer, (currentImageRows/threads)+(currentImageRows%threads));
 		}
 
 	}
