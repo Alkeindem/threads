@@ -600,7 +600,7 @@ char* readChunk(int fd, Img *imgFile)
         size = read(fd, buffer, lenght);//Store chunk data
 
         size = read(fd, crc, 4);//Get crc
-        printf("\n");// REMOVE THIS PRINT LATER ////////////////////////////////////////
+        //printf("\n");// REMOVE THIS PRINT LATER ////////////////////////////////////////
         if(strcmp(chunkName, "IHDR") == 0)
         {
             getDimensions(buffer, imgFile);
