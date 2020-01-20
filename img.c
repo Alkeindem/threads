@@ -292,7 +292,7 @@ void pPooling(Img *imgFile, int row)
     }
 }
  */
-void pPooling(Img *imgFile, int row)
+void pPooling(Img *imgFile, double kernel[3][3], int row)
 {
     //The mask dimension is 3x3
     //imgFile->image2 should already have the actual row with convolution and rectification
@@ -303,11 +303,11 @@ void pPooling(Img *imgFile, int row)
     
     if(row + 2 < imgFile->height && row % 3 == 0)//If the entire mask still fits in the boundaries of the image
     {
-        auxPooling(imgFile, auxRow1, row + 1);
-        auxPooling(imgFile, auxRow2, row + 2);//Calculate temporarily the next 2 rows
+        auxPooling(imgFile, auxRow1, kernel, row + 1);
+        auxPooling(imgFile, auxRow2, kernel, row + 2);//Calculate temporarily the next 2 rows
         for(i = 0; i < imgFile->width - 2; i += 3)//For each point horizontally in the row where the mask fits entirely
         {
-            maskMax = imgFile->image2[row][i] //Origin point of the mask is the max
+            maskMax = imgFile->image2[row][i]; //Origin point of the mask is the max
             for(k = 0; k < 3; k++)//Each column in mask
             {
                 if(i + k < imgFile->width)//If pixel in mask is not out of boundaries
@@ -346,10 +346,10 @@ void copyRow(Img *imgFile, float *row1, float *row2)
     }
 }
 
-void auxPooling(Img *imgFile, float *row1, int row)
+void auxPooling(Img *imgFile, double kernel[3][3], float *row1, int row)
 {
     int i;
-    auxConvolution(imgFile, globalKernel, row1, row);//Uses global kernel
+    auxConvolution(imgFile, kernel, row1, row);//Uses global kernel
     auxRectification(imgFile, row1);
 }
 
@@ -391,6 +391,7 @@ void auxRectification(Img *imgFile, float *row1)
 //Input: matrix with pixel values, Img struct pointer and treshold percentage
 //Function: Checks each pixel value and counts how many of them are black
 //Output: 1 if it's classified as nearly black, 0 in the opposite case
+/* 
 int nearlyBlack(float** imgMatrix, Img *imgFile, float percentage)
 {
     int i, j;
@@ -411,6 +412,37 @@ int nearlyBlack(float** imgMatrix, Img *imgFile, float percentage)
         return 1; //Nearly black
     }
     return 0; //Opposite case
+}
+*/
+
+//Input: imgFile struct with the image after pooling (all pipeline stages applied) and the actual row where the 0s are being counted
+//Function: Checks each pixel value in the row and counts the zeroes
+//Output: Number of black pixels in said row
+int blackPixels(Img *imgFile, int row)
+{
+    int j, blackP = 0;
+    for(j = 0; j < imgFile->width; j++)
+    {
+        if(imgFile->image3[row][j] == 0.0)
+        {
+            blackP += 1;
+        }
+    }
+    return blackP;
+}
+
+//Input: imgFile pointer to get image dimensions, the number of black pixels in the image after processing, the initial tresshold
+//Function: Calculates the percentage of black pixels in the entire image
+//Output: Returns a 1 if the image is classified as Nearly Black 
+int pNearlyBlack(Img *imgFile, int bPixels, int tresshold)
+{
+    int totalPixels = imgFile->width * imgFile->height;
+    float bPercentage = (100 * bPixels) /  totalPixels;
+    if(bPercentage > tresshold)
+    {
+        return 1;
+    }
+    return 0;
 }
 
 //Input:Bidimensional array for the image, Img pointer
@@ -433,6 +465,7 @@ void printMat(float** imgMatr, Img *imgFile)
 //Function: Sets an array with the pixel values of the image by transforming the raw data (in string form, where each char is a byte of data)
 //          to
 //Output: imgMatrix pointer stores the image with pixel values in Decimal (as floats)
+
 /* 
 void setImage(float **imgMatrix, Img *imgFile)
 {
@@ -450,7 +483,7 @@ void setImage(float **imgMatrix, Img *imgFile)
         }
     }
 }
- */
+*/
 
 //Input: Bidimensional array for image (pointer) and Img pointer to extract the image data
 //Function: Sets an array with the pixel values of the image by transforming the raw data (in string form, where each char is a byte of data)
