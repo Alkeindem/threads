@@ -37,8 +37,8 @@ typedef struct
 }Img;
 
 typedef struct{
-    float *buffer; //
-    int size; //Size of the buffer (number of rows it holds)
+    int *buffer; //Holds the indexes of the image rows to be produced and distribute to threads
+    int bufferSize; //Size of the buffer (number of rows it holds)
 }Buffer;
 
 #endif
