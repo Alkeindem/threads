@@ -315,17 +315,17 @@ void pPooling(Img *imgFile, double kernel[3][3], int row)
                     tempMax = imgFile->image2[row][i + k];//Check if the actual row from pooling at column i + k is the max
                     if(tempMax > maskMax)
                     {
-                        maskMax = tempMax
+                        maskMax = tempMax;
                     }
                     tempMax = auxRow1[i + k];//Check if the row beneath from pooling at column i + k is the max
                     if(tempMax > maskMax)
                     {
-                        maskMax = tempMax
+                        maskMax = tempMax;
                     }
                     tempMax = auxRow2[i + k];//Check if the row beneath the previous one from pooling at column i + k is the max
                     if(tempMax > maskMax)
                     {
-                        maskMax = tempMax
+                        maskMax = tempMax;
                     }
                 }
             }
