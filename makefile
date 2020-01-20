@@ -1,4 +1,4 @@
-main: main.c utils.o
+main: main.c utils.o img.o
 	gcc -o main main.c utils.o img.o
 
 utils.o: utils.c utils.h

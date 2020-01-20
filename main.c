@@ -20,17 +20,18 @@
 
 // Args structs
 
-struct arg_struct {
-    int buffer;
-    int auxiliary;
-};
-
+typedef struct arg_struct_prod {
+    int bufferSize;
+    int imageNumber;
+} arg_struct_prod;
 
 // Global variables
 int ticket;
 int bufferFill;
 int currentImageRows;
+double kernel[3][3];
 Img *globalImgFile;
+int* buffer;
 
 pthread_mutex_t ticketSelectionMutex;
 
@@ -38,20 +39,20 @@ pthread_barrier_t fullBufferBarrier;
 pthread_barrier_t emptyBufferBarrier;
 pthread_barrier_t syncStartBarrier;
 
-pthread_cond_t cond1 = PTHREAD_COND_INITIALIZER; 
-pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER; 
 
-
-void* producer(void* buffer, void* bfrSize)
+void* producer(void* prodArgs)
 {
-	int i;
-	int n = 0;
-	int* bfrSizePtr = (int*) bfrSize;
-	// Get params here
-	// currentImageRows = getRows();
+	arg_struct_prod* myProdArgs = (arg_struct_prod*) prodArgs;
 
-	//globalImgFile = starLecture("NombreArchivoALeer");  HAY QUE PASARLE EL NOMBRE DE LA IMAGEN A LEER (o el numero de la imagen)
-	// currentImageRows = globalImgFile->height;
+	int i;
+	char str[3];
+	int n = 0;
+	int bfrSize =  myProdArgs->bufferSize;
+
+	sprintf(str, "%d", myProdArgs->imageNumber);
+
+	globalImgFile = startLecture(strcat("imagen_", str));
+	currentImageRows = globalImgFile->height;
 
 	bufferFill = 0;
 
@@ -59,9 +60,9 @@ void* producer(void* buffer, void* bfrSize)
 
 	while(1)
 	{
-		for (i = 0; i < *bfrSizePtr; i++)
+		for (i = 0; i < bfrSize; i++)
 		{
-			//*buffer[i] = rowLectureFunction();
+			*buffer[i] = n;
 			bufferFill++;
 			n++;
 
@@ -79,7 +80,7 @@ void* producer(void* buffer, void* bfrSize)
 	}
 }
 
-void* consumer(void* buffer, void* workload)
+void* consumer(void* workload)
 {
 	int i;
 
@@ -115,14 +116,6 @@ void* consumer(void* buffer, void* workload)
 		// consume(buffer[ticket % (*bfrSizePtr)]);
 	}
 
-	while(ticket < currentImageRows)
-	{
-		pthread_barrier_wait(&emptyBufferBarrier); // Release barrier
-	}
-
-
-	
-
 	while(ticket != currentImageRows)
 	{
 		pthread_barrier_wait(&fullBufferBarrier); // Locked until producer finishes.
@@ -134,14 +127,15 @@ int main(int argc, char *argv[])
 {
 	int opt;
 	int flags = 0;
-
 	int imgNumber; // Number of images received.
-	double kernel[3][3];
 	int clssThreshold;	// Classification threshold.
 	int skipAnalysis = 0; // Boolean. 1 for showing 'nearly black' analysis, 0 for skipping it.
 	int threads;		// Number of threads.
 	int bufferSize;		// Capacity of the buffer for reading section.
-
+	int baseWorkload;
+	int extraWorkload;
+	int specialWorkload;
+	
 	char str[128];
 	globalImgFile = (Img*) malloc(sizeof(Img));//Reserve memory for the global Img struct
 
@@ -229,6 +223,15 @@ int main(int argc, char *argv[])
 	pthread_t conThreads[threads];
 
 	// Create buffer here
+	buffer = (int*) malloc(bufferSize * sizeof(int));
+
+	// Argument structs here
+
+	arg_struct_prod prodArgs = malloc(sizeof(arg_struct_prod));
+	prodArgs->bufferSize = bufferSize;
+	prodArgs->buffer = buffer;
+
+
 
 
 
@@ -239,32 +242,33 @@ int main(int argc, char *argv[])
 	pthread_barrier_init(&syncStartBarrier, NULL, threads+1);
 
 
-	for(int image = 0; image < imgNumber; image++)
+	for(int image = 1; image <= imgNumber; image++)
 	{
 		bufferFill = -1;
 		ticket = 0;
 
+		// Producer Argument structure configuration
+		prodArgs->imageNumber = image;
+
+
+
 		// Producer thread creation
-		pthread_create(&proThread, NULL, producer, &buffer, &bufferSize);
+		pthread_create(&proThread, NULL, producer, (void*) prodArgs);
 
 		while(bufferFill == -1);	// Stop until parameters are retrieved.
 
 
 		// Consumer threads creation
+		baseWorkload = currentImageRows/threads;
+		extraWorkload = currentImageRows%threads;
+		specialWorkload = baseWorkload + extraWorkload;
+
 		for(int j = 0; j < (threads-1); j++)
 		{
-			pthread_create(&conThreads[j], NULL, consumer, &buffer, (currentImageRows/threads));
+			pthread_create(&conThreads[j], NULL, consumer, (void*) (baseWorkload));
 		}
 
-		if ((currentImageRows%threads) == 0)
-		{
-			pthread_create(&conThreads[threads-1], NULL, consumer, &buffer, (currentImageRows/threads));
-		}
-
-		else
-		{
-			pthread_create(&conThreads[threads-1], NULL, consumer, &buffer, (currentImageRows/threads)+(currentImageRows%threads));
-		}
+		pthread_create(&conThreads[threads-1], NULL, consumer, (void*) (specialWorkload));
 
 	}
 	return 0;		
