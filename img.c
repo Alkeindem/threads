@@ -8,25 +8,7 @@
 #include <string.h>
 #include "structs.h"
 #include "img.h"
-/* 
-typedef struct
-{
-    unsigned int width;
-    unsigned int idatChunks;
-    unsigned int height;
-    unsigned int dataSize;
-    unsigned char *data;
-    unsigned int bitDepth;
-    unsigned int colorType;
-    unsigned int cMethod;
-    float **image1;//First image matrix just after reading the raw PNG data
-    float **image2;//Stores the image with convolution and rectification
-    float **image3;//Stores the image after pooling
-    float **poolImg;
-    int poolWidth;
-    int poolHeight;
-}Img;
- */
+
 //Input: ints a and b
 //Function: a ^ b
 //Returns: int a ^ b
@@ -108,38 +90,6 @@ void rgbToString(char *str, float rgb)
     str[2] = (char)char1;
 }
 
-//Input: The bidimensional array as float array, a double array for the final convolution, kernel mask and Img pointer
-//Function: Perfoms the convolution according to the first image matrix and kernel and stores it in the second image matrix
-//Output: Void (none)
-
-/* 
-void convolution(float **imgMatrix, float **imgMatrix2, double kernel[3][3], Img *imgFile)
-{
-    int i, j;
-    for(i = 0; i < imgFile->height; i++)
-    {
-        for(j = 0; j < imgFile->width; j++)
-        {
-            if(i == 0 || j == 0)
-            {
-                imgMatrix2[i][j] = 0;
-            }
-            else if(i == imgFile->height - 1 || j == imgFile->width - 1)
-            {
-                imgMatrix2[i][j] = 0;
-            }
-            else
-            {
-                imgMatrix2[i][j] = (imgMatrix[i-1][j-1] * kernel[0][0] + imgMatrix[i-1][j] * kernel[0][1] + imgMatrix[i-1][j+1] * kernel[0][2]
-                                  + imgMatrix[i][j-1] * kernel[1][0] + imgMatrix[i][j] * kernel[1][1] + imgMatrix[i+1][j] * kernel[1][2]
-                                  + imgMatrix[i+1][j-1] * kernel[2][0] + imgMatrix[i+1][j] * kernel[2][1] + imgMatrix[i+1][j+1] * kernel[2][2]
-                                   ) / 9;
-            }
-        }
-    }
-}
- */
-
 //Input: The kernel that contains the filter to apply to the image, pointer to the Img struct and the row to apply the convolution to
 //Function: Applies convolution to the row assigned to a thread. To avoid the situation that many threads will apply convolution to...
 //          ...the first image, they instead write the convolution proccess in a second image (reading data from the first one, which
@@ -168,26 +118,6 @@ void pConvolution(double kernel[3][3], Img *imgFile, int row)
     }
 }
 
-//Input: The bidimensional array for the image, Img struct pointer
-//Function: Verifies if all pixel values are non negative, if they are, changes them to 0
-//Output: Rectified image
-/* 
-void rectification(Img *imgFile)
-{
-    int i,j;
-    for(i = 0; i < imgFile->height; i++)
-    {
-        for(j = 0; j < imgFile->width; j++)
-        {
-            if(imgFile->image2[i][j] < 0)//If the pixel value of the image after the convolution has been applied has a negative value
-            {
-                imgFile->image2[i][j] = 0;//It becomes positive in Image3
-            }
-        }
-    }
-}
- */
-
 //Input: Pointer to an Img struct containing the image after convolution (struct Img->image2) and the row to be proccessed by a thread
 //Function: Checks for the entire row for negative values, if there are, they become 0
 //Output: The image with it's rectified row will be stored in the same Img->image2. If all threads are done then the entire image will 
@@ -203,95 +133,11 @@ void pRectification(Img *imgFile, int row)
         }
     }
 }
-//Input: Original image, struct pointer
-//Function: Applies max pooling to the image and stores it in the new one (stores it in the struct imgFile->poolImg)
-//Output: None (Void)
-/* 
-void pooling(float **imgMatrix, Img *imgFile)
-{
-    int i, j, x, y, width = imgFile->width, height = imgFile->height, fWidth = 2, fHeight = 2;
-    int poolImgW, poolImgH, pW = 0, pH = 0;
-    float maxTemp;
-    if(width % fWidth == 0)
-    {
-        poolImgW = width / fWidth;
-    }
-    else
-    {
-        poolImgW = (width / fWidth) + 1; 
-    }
-    if(height % fHeight == 0)
-    {
-        poolImgH = height / fHeight;
-    }
-    else
-    {
-        poolImgH = (height / fHeight) + 1;
-    }
-    imgFile->poolImg = (float**) malloc(sizeof(float*) * poolImgH);
-    for(i = 0; i < poolImgH; i++)
-    {
-        imgFile->poolImg[i] = (float*) malloc(sizeof(float) * poolImgW);
-    }
-    imgFile->poolWidth = poolImgW;
-    imgFile->poolHeight = poolImgH;
-    //printf("%d y %d %d y %d\n", width, height, poolImgW, poolImgH);
-    for(i = 0; i < height; i += fHeight)
-    {
-        for(j = 0; j < width; j += fWidth)
-        {
-            maxTemp = imgMatrix[i][j];
-            for(y = i; y < height || y < i + fHeight; y++)
-            {
-                for(x = j; x < width || x < j + fWidth; x++)
-                {
-                    if(imgMatrix[y][x] > maxTemp)
-                    {
-                        maxTemp = imgMatrix[y][x];
-                    }
-                }
-            }
-            imgFile->poolImg[pH][pW] = maxTemp;
-            pW++;
-        }
-        pW = 0;
-        pH++;
-    }
-}
- */
 
 //Input: Pointer the the Img struct to get
 //Fu
-/* 
-void pPooling(Img *imgFile, int row)
-{
-    //The mask dimension is 3x3
-    int i, j, k;
-    float tempMax, maskMax;
-    if(row + 2 < imgFile->height && row % 3 == 0)//If the entire mask still fits in the boundaries of the image
-    {
-        for(i = 0; i < imgFile->width - 2; i += 3)//For each point where the mask fits entirely
-        {
-            maskMax = imgFile->image2[row][i] //Origin point is the max
-            for(j = 0; j < 3; j++)//Each row IN mask
-            {
-                for(k = 0; k < 3; k++)//Each column in mask
-                {
-                    if(i + k < imgFile->width && row + j < imgFile->height)//If pixel in mask is not out of boundaries
-                    {
-                        tempMax = imgFile->image2[row + j][i + k];
-                        if(tempMax > maskMax)
-                        {
-                            maskMax = tempMax
-                        }
-                    }
-                }
-            }
-            imgFile->image3[row / 3][i / 3] = maskMax;
-        }
-    }
-}
- */
+//
+
 void pPooling(Img *imgFile, double kernel[3][3], int row)
 {
     //The mask dimension is 3x3
@@ -388,33 +234,6 @@ void auxRectification(Img *imgFile, float *row1)
     }
 }
 
-//Input: matrix with pixel values, Img struct pointer and treshold percentage
-//Function: Checks each pixel value and counts how many of them are black
-//Output: 1 if it's classified as nearly black, 0 in the opposite case
-/* 
-int nearlyBlack(float** imgMatrix, Img *imgFile, float percentage)
-{
-    int i, j;
-    float max = (float)imgFile->width * (float)imgFile->height, blackP = 0.0, finalP;
-    for(i = 0; i < imgFile->height; i++)
-    {
-        for(j = 0; j < imgFile->width; j++)
-        {
-            if(imgMatrix[i][j] == 0.0)
-            {
-                blackP += 1;
-            }
-        }
-    }
-    finalP = (blackP * 100) / max;
-    if(finalP > percentage)
-    {
-        return 1; //Nearly black
-    }
-    return 0; //Opposite case
-}
-*/
-
 //Input: imgFile struct with the image after pooling (all pipeline stages applied) and the actual row where the 0s are being counted
 //Function: Checks each pixel value in the row and counts the zeroes
 //Output: Number of black pixels in said row
@@ -460,30 +279,6 @@ void printMat(float** imgMatr, Img *imgFile)
         printf("\n");
     }
 }
-
-//Input: Bidimensional array for image (pointer) and Img pointer to extract the image data
-//Function: Sets an array with the pixel values of the image by transforming the raw data (in string form, where each char is a byte of data)
-//          to
-//Output: imgMatrix pointer stores the image with pixel values in Decimal (as floats)
-
-/* 
-void setImage(float **imgMatrix, Img *imgFile)
-{
-    int i, j, pos = 0;
-    char pixel[3];
-    for(i = 0; i < imgFile->height; i++)
-    {
-        for(j = 0; j < imgFile->width; j++)
-        {
-            pixel[0] = imgFile->data[pos];
-            pixel[1] = imgFile->data[pos + 1];
-            pixel[2] = imgFile->data[pos + 2];//Build string of 3 chars from the raw data
-            imgMatrix[i][j] = (float) hexToDec(pixel, 3); //And convert it to decimal and cast it as a float for the image matrix
-            pos += 3;
-        }
-    }
-}
-*/
 
 //Input: Bidimensional array for image (pointer) and Img pointer to extract the image data
 //Function: Sets an array with the pixel values of the image by transforming the raw data (in string form, where each char is a byte of data)
@@ -536,7 +331,7 @@ void setAllImgSizes(Img *imgFile)
 //Output: None (Void)
 void getDimensions(char *buffer, Img *imgFile)
 {
-    unsigned char strWidth[4], strHeight[4], bitDepth[1], cType[1], cMethod[1];
+    unsigned char strWidth[4], strHeight[4], bitDepth[1], cType[1], cMethod[1], fMethod[1], iMethod[1];
     int i;
     for(i = 0; i < 4; i++)
     {
@@ -546,11 +341,15 @@ void getDimensions(char *buffer, Img *imgFile)
     bitDepth[0] = buffer[8];
     cType[0] = buffer[9];
     cMethod[0] = buffer[10];
+    fMethod[0] = buffer[11];
+    iMethod[0] = buffer[12];
     imgFile->width = hexToDec(strWidth, 4);
     imgFile->height = hexToDec(strHeight, 4);
     imgFile->bitDepth = hexToDec(bitDepth, 1);
     imgFile->colorType = hexToDec(cType, 1);
     imgFile->cMethod = hexToDec(cMethod, 1);
+    imgFile->fMethod = hexToDec(fMethod, 1);
+    imgFile->iMethod = hexToDec(iMethod, 1);
 }
 
 //Input: Data from IDAT chunk, Img struct pointer, lenght of the data
@@ -585,7 +384,6 @@ char* readChunk(int fd, Img *imgFile)
     chunkName = (char*) malloc(sizeof(char) * 4);
     size = read(fd, lenStr, 4);//First, get the chunk data's lenght
     lenght = hexToDec(lenStr, 4);
-    
     if((unsigned int)lenStr[0] == 0 && (unsigned int)lenStr[1] == 0 && (unsigned int)lenStr[2] == 0 && (unsigned int)lenStr[3] == 0)
     {
         strcpy(chunkName, "IEND");
@@ -600,7 +398,6 @@ char* readChunk(int fd, Img *imgFile)
         size = read(fd, buffer, lenght);//Store chunk data
 
         size = read(fd, crc, 4);//Get crc
-        //printf("\n");// REMOVE THIS PRINT LATER ////////////////////////////////////////
         if(strcmp(chunkName, "IHDR") == 0)
         {
             getDimensions(buffer, imgFile);
@@ -618,29 +415,6 @@ char* readChunk(int fd, Img *imgFile)
 //Input: File descriptor to read from
 //Function: Start reading PNG data and stops at the last chunk (IEND)
 //Output: Img structre with info stored
-/* 
-Img readPNG(int fd)
-{
-    unsigned char *chunkName = (unsigned char*) malloc(sizeof(char) * 4);
-    unsigned int width, height;
-    Img imgFile;
-    
-    imgFile.dataSize = 0;
-    imgFile.idatChunks = 0;
-    
-    while(strcmp(chunkName, "IEND") != 0)
-    {
-        chunkName = readChunk(fd, &imgFile);
-        if(strcmp(chunkName, "IEND") == 0)
-        {
-            break;
-        }
-    }
-    free(chunkName);
-    return imgFile;
-}
- */
-
 void readPNG(Img *imgFile, int fd)
 {
     unsigned char *chunkName = (unsigned char*) malloc(sizeof(char) * 4);
@@ -662,36 +436,11 @@ void readPNG(Img *imgFile, int fd)
 //Input: Name of the image file to read
 //Function: Starts reading the png file information
 //Output: Img struct with all data stored
-/* 
-Img startLecture(char *filename)
-{
-    int fd, i = 0;
-    char buffer[256];
-    int size;
-    Img imageFile;
-
-    fd = open(filename, O_RDONLY);
-
-    //First 8 bytes of header are the PNG signature
-    for(i; i < 8; i++)
-    {
-        size = read(fd, buffer, 1);
-        buffer[0] = 0;
-    }
-
-    imageFile = readPNG(fd);
-    close(fd);
-    
-    return imageFile;
-}
- */
-
 void startLecture(Img *imgFile, char *filename)
 {
     int fd, i = 0;
     char buffer[256];
     int size;
-
     fd = open(filename, O_RDONLY);
 
     //First 8 bytes of header are the PNG signature
@@ -703,4 +452,22 @@ void startLecture(Img *imgFile, char *filename)
 
     readPNG(imgFile, fd);
     close(fd);
+}
+
+void freeImgMem(Img *imgFile)
+{
+    int i, j;
+    free(imgFile->data);
+    for(i = 0; i < imgFile->height; i++)
+    {
+        free(imgFile->image1[i]);
+        if(i < imgFile->height - 1)
+        {
+            free(imgFile->image2[i]);
+        }        
+    }
+    free(imgFile->image1);
+    free(imgFile->image2);
+    free(imgFile->image3);
+    free(imgFile);
 }

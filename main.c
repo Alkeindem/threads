@@ -60,7 +60,7 @@ void* producer(void* prodArgs)
 	char* imageName;
 	int n = 0;
 	int bfrSize =  myProdArgs->bufferSize;
-
+	globalImgFile = (Img*) malloc(sizeof(Img));
 	str = malloc(6 * sizeof(char));
 	imageName = malloc(12 * sizeof(char));
 
@@ -70,7 +70,7 @@ void* producer(void* prodArgs)
 	strcat(imageName, str);
 	strcat(imageName, ".png");
 
-
+	
 	startLecture(globalImgFile, imageName);
 	currentImageRows = globalImgFile->height;
 	setAllImgSizes(globalImgFile);
@@ -202,7 +202,6 @@ int main(int argc, char *argv[])
 	int specialWorkload;
 	
 	char str[128];
-	globalImgFile = (Img*) malloc(sizeof(Img));//Reserve memory for the global Img struct
 
 	while ((opt = getopt(argc, argv, ":h:t:c:m:n:bd")) != -1)
 	{
@@ -365,7 +364,8 @@ int main(int argc, char *argv[])
 		{
 			pthread_join(conThreads[c], NULL);
 		}
+		
 	}
-
+	freeImgMem(globalImgFile);
 	return 0;		
 }	

@@ -1,23 +1,6 @@
 #ifndef _structs_h
 #define _structs_h
 
-/* 
-typedef struct
-{
-    unsigned int width; //image width
-    unsigned int idatChunks; //How many chunks with data in the PNG
-    unsigned int height; //Image height
-    unsigned int dataSize; //How many bytes of data
-    unsigned char *data; //String with the raw data from the PNG (just the pixel values)
-    unsigned int bitDepth;
-    unsigned int colorType;
-    unsigned int cMethod;
-    float ** image2;
-    float **poolImg;
-    int poolWidth;
-    int poolHeight;
-}Img;
- */
 typedef struct
 {
     unsigned int width;
@@ -28,12 +11,11 @@ typedef struct
     unsigned int bitDepth;
     unsigned int colorType;
     unsigned int cMethod;
+    unsigned int fMethod;
+    unsigned int iMethod;
     float **image1;//First image matrix just after reading the raw PNG data
     float **image2;//Stores the image with convolution and rectification
     float **image3;//Stores the image after pooling
-    float **poolImg;
-    int poolWidth;
-    int poolHeight;
 }Img;
 
 typedef struct{

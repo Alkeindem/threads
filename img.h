@@ -44,4 +44,5 @@ void readPNG(Img *imgFile, int fd);
 
 void startLecture(Img *imgFile, char *filename);
 
+void freeImgMem(Img *imgFile);
 #endif
