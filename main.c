@@ -51,7 +51,6 @@ pthread_barrier_t fullBufferBarrier;
 pthread_barrier_t emptyBufferBarrier;
 pthread_barrier_t syncStartBarrier;
 
-
 void* producer(void* prodArgs)
 {
 	arg_struct_prod* myProdArgs = (arg_struct_prod*) prodArgs;
@@ -141,8 +140,8 @@ void* consumer(void* consArgs)
 			if(debug)
 				printf("Buffer emptied!\n\n");
 
-			pthread_barrier_wait(&emptyBufferBarrier); // Release barrier
 			busyBuffer = 1;
+			pthread_barrier_wait(&emptyBufferBarrier); // Release barrier
 			while(busyBuffer == 1);
 		}
 
@@ -156,15 +155,18 @@ void* consumer(void* consArgs)
 		if(debug)
 			printf("Consumed %d | bufferFill: %d\n", i, bufferFill);
 
+		
+
 		pConvolution(kernel, globalImgFile, i % (bfrSize));
 		pRectification(globalImgFile, i % (bfrSize));
 		pPooling(globalImgFile, kernel, i % (bfrSize));
-		localPixels = blackPixels(globalImgFile, i % bfrSize);
+
+		localPixels = blackPixels(globalImgFile, i % (bfrSize));
 
 		pthread_mutex_lock(&blackCountingMutex);
 
 		globalPixels = globalPixels + localPixels;
-
+		
 		pthread_mutex_unlock(&blackCountingMutex);
 
 		
@@ -363,8 +365,6 @@ int main(int argc, char *argv[])
 		{
 			pthread_join(conThreads[c], NULL);
 		}
-		
-
 	}
 
 	return 0;		
