@@ -135,8 +135,8 @@ void pRectification(Img *imgFile, int row)
 }
 
 //Input: Pointer the the Img struct to get
-//Fu
-//
+//Function: Applies pooling to the image
+//Output: Returns the last image with pooling applied to the Img struct in image3
 
 void pPooling(Img *imgFile, double kernel[3][3], int row)
 {
@@ -182,7 +182,9 @@ void pPooling(Img *imgFile, double kernel[3][3], int row)
     free(auxRow2);
 }
 
+//Input: Img struct and both rows, the first to pass the data to the second (row1 to row2)
 //Function: Copies float elements from row1 to row2
+//Output: Row2 with contents of row1
 void copyRow(Img *imgFile, float *row1, float *row2)
 {
     int i;
@@ -192,6 +194,9 @@ void copyRow(Img *imgFile, float *row1, float *row2)
     }
 }
 
+//Input: Img struct and kernel to apply to a single row
+//Funciont: Applies pooling to a single row
+//Output: Row with pooling applied
 void auxPooling(Img *imgFile, float *row1, double kernel[3][3], int row)
 {
     int i;
@@ -199,6 +204,9 @@ void auxPooling(Img *imgFile, float *row1, double kernel[3][3], int row)
     auxRectification(imgFile, row1);
 }
 
+//Input: Img struct and kernel to apply to a single row
+//Funciont: Applies convolution to a single row
+//Output: Row with convolution applied
 void auxConvolution(Img *imgFile, double kernel[3][3], float *row1, int row)
 {
     int j;
@@ -222,6 +230,9 @@ void auxConvolution(Img *imgFile, double kernel[3][3], float *row1, int row)
     }
 }
 
+//Input: Img struct to apply to a single row
+//Funciont: Applies rectification to a single row
+//Output: Row with rectification applied
 void auxRectification(Img *imgFile, float *row1)
 {
     int i;
@@ -306,6 +317,9 @@ void setImage(Img *imgFile)
     }
 }
 
+//Input: Set image size for the images where the results of process will be stored
+//Function: Allocates memory to al the image to have them stored
+//output: Memory allocation for images
 void setAllImgSizes(Img *imgFile)
 {
     int i;
@@ -454,6 +468,9 @@ void startLecture(Img *imgFile, char *filename)
     close(fd);
 }
 
+//Input:Img file pointer to liberate it's memory directly
+//Function: Frees memory from all images
+//Output: Nothing
 void freeImgMem(Img *imgFile)
 {
     int i, j;
